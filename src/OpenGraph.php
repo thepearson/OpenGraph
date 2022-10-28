@@ -7,7 +7,7 @@ use shweshi\OpenGraph\Exceptions\FetchException;
 
 class OpenGraph
 {
-    public function fetch($url, $allMeta = null, $lang = null, $options = LIBXML_NOWARNING | LIBXML_NOERROR, $userAgent = 'Curl')
+    public function fetch($url, $allMeta = null, $lang = null, $options = LIBXML_NOWARNING | LIBXML_NOERROR, $userAgent = 'Curl', $verifyImage = true)
     {
         $html = $this->curl_get_contents($url, $lang, $userAgent);
         /**
@@ -16,7 +16,7 @@ class OpenGraph
         $doc = new DOMDocument();
 
         $libxml_previous_state = libxml_use_internal_errors(true);
-        $doc->loadHTML('<?xml encoding="utf-8" ?>'.$html, $options);
+        $doc->loadHTML('<?xml encoding="utf-8" ?>' . $html, $options);
         //catch possible errors due to empty or malformed HTML
         if ($options > 0 && ($options & (LIBXML_NOWARNING | LIBXML_NOERROR)) == 0) {
             Log::warning(libxml_get_errors());
@@ -43,7 +43,7 @@ class OpenGraph
             /*
              * Verify image url
              */
-            if (isset($metadata['image'])) {
+            if (isset($metadata['image']) && $verifyImage) {
                 $isValidImageUrl = $this->verify_image_url($metadata['image']);
                 if (!$isValidImageUrl) {
                     $metadata['image'] = '';
@@ -59,11 +59,11 @@ class OpenGraph
         $headers = [
             'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Cache-Control: no-cache',
-            'User-Agent: '.$userAgent,
+            'User-Agent: ' . $userAgent,
         ];
 
         if ($lang) {
-            array_push($headers, 'Accept-Language: '.$lang);
+            array_push($headers, 'Accept-Language: ' . $lang);
         }
 
         $curl = curl_init();
@@ -84,11 +84,23 @@ class OpenGraph
         ]);
 
         $response = curl_exec($curl);
-        if (curl_errno(/** @scrutinizer ignore-type */ $curl) !== 0) {
-            throw new FetchException(curl_error(/** @scrutinizer ignore-type */ $curl), curl_errno($curl), null, curl_getinfo(/** @scrutinizer ignore-type */ $curl));
+        if (curl_errno(
+            /** @scrutinizer ignore-type */
+            $curl
+        ) !== 0) {
+            throw new FetchException(curl_error(
+                /** @scrutinizer ignore-type */
+                $curl
+            ), curl_errno($curl), null, curl_getinfo(
+                /** @scrutinizer ignore-type */
+                $curl
+            ));
         }
 
-        curl_close(/** @scrutinizer ignore-type */ $curl);
+        curl_close(
+            /** @scrutinizer ignore-type */
+            $curl
+        );
 
         return $response;
     }
